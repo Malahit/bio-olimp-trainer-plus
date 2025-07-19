@@ -62,19 +62,6 @@ const Index = () => {
         description: `Вы получили ${question.points} ${question.points === 1 ? 'балл' : 'балла'}!`,
       });
     }
-
-    // Переход к следующему вопросу через 3 секунды
-    setTimeout(() => {
-      if (currentQuestionIndex < practiceQuestions.length - 1) {
-        setCurrentQuestionIndex(prev => prev + 1);
-      } else {
-        setCurrentView("dashboard");
-        toast({
-          title: "Тренировка завершена! 🏆",
-          description: "Отличная работа! Ваш прогресс сохранён.",
-        });
-      }
-    }, 3000);
   };
 
   const getTopicProgress = (topicId: string) => {
@@ -124,6 +111,17 @@ const Index = () => {
             <QuestionCard 
               question={currentQuestion}
               onAnswer={handleAnswer}
+              onNext={() => {
+                if (currentQuestionIndex < practiceQuestions.length - 1) {
+                  setCurrentQuestionIndex(prev => prev + 1);
+                } else {
+                  setCurrentView("dashboard");
+                  toast({
+                    title: "Тренировка завершена! 🏆",
+                    description: "Отличная работа! Ваш прогресс сохранён.",
+                  });
+                }
+              }}
             />
           </div>
         </div>

@@ -16,9 +16,10 @@ interface QuestionCardProps {
     difficulty: "easy" | "medium" | "hard";
   };
   onAnswer: (questionId: string, userAnswer: any, isCorrect: boolean) => void;
+  onNext?: () => void;
 }
 
-export const QuestionCard = ({ question, onAnswer }: QuestionCardProps) => {
+export const QuestionCard = ({ question, onAnswer, onNext }: QuestionCardProps) => {
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [showResult, setShowResult] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
@@ -120,6 +121,16 @@ export const QuestionCard = ({ question, onAnswer }: QuestionCardProps) => {
             className="w-full"
           >
             Ответить
+          </Button>
+        )}
+
+        {showResult && onNext && (
+          <Button 
+            onClick={onNext}
+            variant="bio"
+            className="w-full"
+          >
+            Далее →
           </Button>
         )}
       </CardContent>
