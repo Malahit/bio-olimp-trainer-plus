@@ -23,7 +23,7 @@ const Index = () => {
   const handleTopicClick = (topicId: string) => {
     setCurrentTopic(topicId);
     const topicQuestions = questions.filter(q => 
-      q.category.toLowerCase() === topicId.toLowerCase()
+      q.category === topicId
     );
     setPracticeQuestions(topicQuestions);
     setCurrentQuestionIndex(0);
@@ -79,7 +79,7 @@ const Index = () => {
 
   const getTopicProgress = (topicId: string) => {
     const topicQuestions = questions.filter(q => 
-      q.category.toLowerCase() === topicId.toLowerCase()
+      q.category === topicId
     );
     const completedCount = topicQuestions.filter(q => 
       userProgress.completedQuestions.includes(q.id)
@@ -138,7 +138,7 @@ const Index = () => {
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="text-4xl animate-pulse">🧬</div>
+              <div className="text-4xl">🧬</div>
               <div>
                 <h1 className="text-3xl font-bold">БиоОлимп Тренажёр</h1>
                 <p className="text-primary-foreground/80">Интерактивная подготовка к олимпиадам по биологии</p>

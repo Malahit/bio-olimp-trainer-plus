@@ -137,28 +137,28 @@ export const questions: Question[] = [
 
 export const categories = [
   {
-    id: "botany",
+    id: "Ботаника",
     name: "Ботаника", 
     description: "Растения, грибы, фотосинтез",
     icon: "🌿",
     color: "botany" as const
   },
   {
-    id: "zoology", 
+    id: "Зоология", 
     name: "Зоология",
     description: "Животные, адаптации, классификация", 
     icon: "🦉",
     color: "zoology" as const
   },
   {
-    id: "ecology",
+    id: "Экология",
     name: "Экология",
     description: "Экосистемы, пищевые цепи, среда обитания",
     icon: "🌍", 
     color: "ecology" as const
   },
   {
-    id: "anatomy",
+    id: "Анатомия",
     name: "Анатомия",
     description: "Строение человека, системы органов",
     icon: "🫀",
