@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -36,6 +36,13 @@ export const QuestionCard = ({ question, onAnswer, onNext }: QuestionCardProps) 
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [showResult, setShowResult] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
+  
+  // Сброс состояния при смене вопроса
+  useEffect(() => {
+    setSelectedAnswer(null);
+    setShowResult(false);
+    setIsCorrect(false);
+  }, [question.id]);
   
   const { submitFeedback, getQuestionStatus } = useQuestionFeedback();
 

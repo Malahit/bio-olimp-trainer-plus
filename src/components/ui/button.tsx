@@ -20,8 +20,8 @@ const buttonVariants = cva(
         link: "text-primary underline-offset-4 hover:underline",
         nature: "bg-gradient-nature text-white hover:shadow-glow hover:scale-105 font-semibold",
         success: "bg-success text-success-foreground hover:bg-success/90 shadow-success hover:scale-105",
-        bio: "bg-gradient-primary text-primary-foreground hover:shadow-glow hover:scale-105 animate-pulse-glow",
-        leaf: "bg-gradient-leaf text-white hover:shadow-bio hover:scale-105 animate-leaf-sway",
+        bio: "bg-gradient-primary text-primary-foreground hover:shadow-glow hover:scale-105",
+        leaf: "bg-gradient-leaf text-white hover:shadow-bio hover:scale-105",
       },
       size: {
         default: "h-10 px-4 py-2",
