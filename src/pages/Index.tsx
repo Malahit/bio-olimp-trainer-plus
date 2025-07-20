@@ -1,30 +1,86 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TopicCard } from "@/components/TopicCard";
 import { StatsCard } from "@/components/StatsCard";
 import { QuestionCard } from "@/components/QuestionCard";
+import { AchievementCard } from "@/components/AchievementCard";
+import { ProgressChart } from "@/components/ProgressChart";
+import { UserStats } from "@/components/UserStats";
 import { categories, questions, getUserProgress, saveUserProgress } from "@/data/questions";
 import { useToast } from "@/hooks/use-toast";
 import bioHeroImage from "@/assets/bio-hero.jpg";
 
 const Index = () => {
-  const [currentView, setCurrentView] = useState<"dashboard" | "practice" | "topic">("dashboard");
+  const [currentView, setCurrentView] = useState<"dashboard" | "practice" | "achievements">("dashboard");
   const [currentTopic, setCurrentTopic] = useState<string | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [userProgress, setUserProgress] = useState(getUserProgress());
   const [practiceQuestions, setPracticeQuestions] = useState(questions);
+  const [sessionStartTime] = useState(Date.now());
   const { toast } = useToast();
 
   useEffect(() => {
     saveUserProgress(userProgress);
   }, [userProgress]);
 
+  // Система достижений
+  const achievements = [
+    {
+      id: "first_steps",
+      title: "Первые шаги",
+      description: "Решите первые 5 заданий",
+      icon: "🌱",
+      requirement: 5,
+      currentProgress: userProgress.completedQuestions.length,
+      isUnlocked: userProgress.completedQuestions.length >= 5,
+      points: 10
+    },
+    {
+      id: "botanist",
+      title: "Ботаник",
+      description: "Изучите все задания по ботанике",
+      icon: "🌿",
+      requirement: questions.filter(q => q.category === "Ботаника").length,
+      currentProgress: questions.filter(q => 
+        q.category === "Ботаника" && userProgress.completedQuestions.includes(q.id)
+      ).length,
+      isUnlocked: questions.filter(q => 
+        q.category === "Ботаника" && userProgress.completedQuestions.includes(q.id)
+      ).length === questions.filter(q => q.category === "Ботаника").length,
+      points: 50
+    },
+    {
+      id: "zoologist",
+      title: "Зоолог",
+      description: "Изучите все задания по зоологии",
+      icon: "🦉",
+      requirement: questions.filter(q => q.category === "Зоология").length,
+      currentProgress: questions.filter(q => 
+        q.category === "Зоология" && userProgress.completedQuestions.includes(q.id)
+      ).length,
+      isUnlocked: questions.filter(q => 
+        q.category === "Зоология" && userProgress.completedQuestions.includes(q.id)
+      ).length === questions.filter(q => q.category === "Зоология").length,
+      points: 50
+    },
+    {
+      id: "points_master",
+      title: "Мастер баллов",
+      description: "Наберите 500 баллов",
+      icon: "⭐",
+      requirement: 500,
+      currentProgress: userProgress.totalPoints,
+      isUnlocked: userProgress.totalPoints >= 500,
+      points: 100
+    }
+  ];
+
   const handleTopicClick = (topicId: string) => {
     setCurrentTopic(topicId);
-    const topicQuestions = questions.filter(q => 
-      q.category === topicId
-    );
+    const topicQuestions = questions.filter(q => q.category === topicId);
     setPracticeQuestions(topicQuestions);
     setCurrentQuestionIndex(0);
     setCurrentView("practice");
@@ -65,9 +121,7 @@ const Index = () => {
   };
 
   const getTopicProgress = (topicId: string) => {
-    const topicQuestions = questions.filter(q => 
-      q.category === topicId
-    );
+    const topicQuestions = questions.filter(q => q.category === topicId);
     const completedCount = topicQuestions.filter(q => 
       userProgress.completedQuestions.includes(q.id)
     ).length;
@@ -82,6 +136,18 @@ const Index = () => {
   const totalQuestions = questions.length;
   const completedQuestions = userProgress.completedQuestions.length;
   const overallProgress = totalQuestions > 0 ? (completedQuestions / totalQuestions) * 100 : 0;
+
+  // Данные для графика прогресса
+  const progressData = categories.map(category => {
+    const progress = getTopicProgress(category.name);
+    return {
+      topic: category.id,
+      name: category.name,
+      completed: progress.completed,
+      total: progress.total,
+      color: category.color || "primary"
+    };
+  });
 
   if (currentView === "practice" && practiceQuestions.length > 0) {
     const currentQuestion = practiceQuestions[currentQuestionIndex];
@@ -177,9 +243,10 @@ const Index = () => {
               <Button 
                 variant="outline" 
                 size="lg"
+                onClick={() => setCurrentView("achievements")}
                 className="bg-white/10 border-white/30 text-white hover:bg-white/20"
               >
-                📊 Посмотреть прогресс
+                🏆 Достижения
               </Button>
             </div>
           </div>
@@ -187,126 +254,102 @@ const Index = () => {
       </div>
 
       <main className="max-w-7xl mx-auto px-4 py-8">
-        {/* Статистика */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <StatsCard
-            title="Общий прогресс"
-            value={`${Math.round(overallProgress)}%`}
-            icon="📊"
-            description={`${completedQuestions}/${totalQuestions} заданий`}
-            variant="success"
-          />
-          <StatsCard
-            title="Баллы"
-            value={userProgress.totalPoints}
-            icon="💎"
-            description="за правильные ответы"
-            variant="info"
-          />
-          <StatsCard
-            title="Изучено тем"
-            value={categories.filter(cat => getTopicProgress(cat.id).completed > 0).length}
-            icon="📚"
-            description={`из ${categories.length} доступных`}
-            variant="warning"
-          />
-          <StatsCard
-            title="Уровень"
-            value={Math.floor(userProgress.totalPoints / 10) + 1}
-            icon="🏆"
-            description="Натуралист-исследователь"
-            variant="default"
-          />
-        </div>
+        <Tabs defaultValue="overview" className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="overview">Обзор</TabsTrigger>
+            <TabsTrigger value="topics">Темы</TabsTrigger>
+            <TabsTrigger value="progress">Прогресс</TabsTrigger>
+            <TabsTrigger value="achievements">Достижения</TabsTrigger>
+          </TabsList>
 
-        {/* Быстрый старт */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold mb-4 text-foreground">Начать тренировку</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Button 
-              variant="bio" 
-              size="lg" 
-              className="h-16 text-lg"
-              onClick={handleStartPractice}
-            >
-              🎯 Все темы - Случайные вопросы
-            </Button>
-            <Button 
-              variant="leaf" 
-              size="lg" 
-              className="h-16 text-lg"
-              onClick={() => {
-                const incorrectQuestions = questions.filter(q => 
-                  !userProgress.completedQuestions.includes(q.id)
-                );
-                if (incorrectQuestions.length > 0) {
-                  setPracticeQuestions(incorrectQuestions);
-                  setCurrentQuestionIndex(0);
-                  setCurrentView("practice");
-                } else {
-                  toast({
-                    title: "🎉 Все задания выполнены!",
-                    description: "Вы большой молодец! Попробуйте повторить изученное.",
-                  });
-                }
-              }}
-            >
-              🔄 Неизученные темы
-            </Button>
-          </div>
-        </div>
+          <TabsContent value="overview" className="space-y-8">
+            {/* Статистика пользователя */}
+            <UserStats
+              totalPoints={userProgress.totalPoints}
+              completedQuestions={completedQuestions}
+              totalQuestions={totalQuestions}
+              currentStreak={3} // Заглушка
+              averageScore={85} // Заглушка
+              timeSpent={120} // Заглушка
+            />
 
-        {/* Темы для изучения */}
-        <div>
-          <h2 className="text-2xl font-bold mb-6 text-foreground">Темы для изучения</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {categories.map((category) => {
-              const progress = getTopicProgress(category.id);
-              return (
-                <TopicCard
-                  key={category.id}
-                  title={category.name}
-                  description={category.description}
-                  icon={category.icon}
-                  progress={progress.percentage}
-                  totalQuestions={progress.total}
-                  completedQuestions={progress.completed}
-                  onClick={() => handleTopicClick(category.id)}
-                  color={category.color}
-                />
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Достижения */}
-        {userProgress.completedQuestions.length > 0 && (
-          <div className="mt-12">
-            <h2 className="text-2xl font-bold mb-6 text-foreground">Ваши достижения</h2>
-            <div className="flex flex-wrap gap-2">
-              {userProgress.completedQuestions.length >= 5 && (
-                <Badge variant="outline" className="bg-success/10 text-success border-success/20">
-                  🌱 Первые шаги в биологии
-                </Badge>
-              )}
-              {userProgress.totalPoints >= 20 && (
-                <Badge variant="outline" className="bg-info/10 text-info border-info/20">
-                  🏆 Знаток биологии
-                </Badge>
-              )}
-              {overallProgress >= 50 && (
-                <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20">
-                  🔬 Исследователь природы
-                </Badge>
-              )}
-              {overallProgress === 100 && (
-                <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
-                  👨‍🔬 Мастер биологии
-                </Badge>
-              )}
+            {/* Быстрый старт */}
+            <div>
+              <h2 className="text-2xl font-bold mb-4 text-foreground">Начать тренировку</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Button 
+                  variant="bio" 
+                  size="lg" 
+                  className="h-16 text-lg"
+                  onClick={handleStartPractice}
+                >
+                  🎯 Все темы - Случайные вопросы
+                </Button>
+                <Button 
+                  variant="leaf" 
+                  size="lg" 
+                  className="h-16 text-lg"
+                  onClick={() => {
+                    const incorrectQuestions = questions.filter(q => 
+                      !userProgress.completedQuestions.includes(q.id)
+                    );
+                    if (incorrectQuestions.length > 0) {
+                      setPracticeQuestions(incorrectQuestions);
+                      setCurrentQuestionIndex(0);
+                      setCurrentView("practice");
+                    } else {
+                      toast({
+                        title: "🎉 Все задания выполнены!",
+                        description: "Вы большой молодец! Попробуйте повторить изученное.",
+                      });
+                    }
+                  }}
+                >
+                  🔄 Неизученные темы
+                </Button>
+              </div>
             </div>
-          </div>
-        )}
+          </TabsContent>
+
+          <TabsContent value="topics" className="space-y-6">
+            <h2 className="text-2xl font-bold text-foreground">Темы для изучения</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {categories.map((category) => {
+                const progress = getTopicProgress(category.name);
+                return (
+                  <TopicCard
+                    key={category.id}
+                    title={category.name}
+                    description={category.description}
+                    icon={category.icon}
+                    progress={progress.percentage}
+                    totalQuestions={progress.total}
+                    completedQuestions={progress.completed}
+                    onClick={() => handleTopicClick(category.name)}
+                    color={category.color}
+                  />
+                );
+              })}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="progress" className="space-y-6">
+            <h2 className="text-2xl font-bold text-foreground">Ваш прогресс</h2>
+            <ProgressChart data={progressData} />
+          </TabsContent>
+
+          <TabsContent value="achievements" className="space-y-6">
+            <h2 className="text-2xl font-bold text-foreground">Достижения</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {achievements.map((achievement) => (
+                <AchievementCard
+                  key={achievement.id}
+                  achievement={achievement}
+                />
+              ))}
+            </div>
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );
