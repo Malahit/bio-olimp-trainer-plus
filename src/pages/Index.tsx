@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -35,7 +34,13 @@ const Index = () => {
           q.type === 'true_false' ? 'choice' as const :
           q.type === 'matching' ? 'matching' as const : 'text' as const,
     correctAnswer: q.correctAnswer || (q.correctIndex !== undefined ? q.options[q.correctIndex] : ''),
-    category: q.category || q.theme
+    category: q.category || q.theme,
+    points: q.points || 10, // Ensure points is always defined
+    difficulty: typeof q.difficulty === 'string' ? 
+      (q.difficulty === 'easy' ? 1 : q.difficulty === 'medium' ? 2 : 3) : 
+      q.difficulty || 2,
+    explanation: q.explanation || '',
+    options: q.options || []
   });
 
   // Загрузка пользовательских вопросов при старте
@@ -218,18 +223,20 @@ const Index = () => {
 
   // Анализ вопросов - convert to OlympiadQuestion format
   const olympiadQuestions = allQuestions.map(q => ({
-    ...q,
-    theme: q.category || 'general',
-    correctIndex: q.options?.findIndex(opt => opt === q.correctAnswer) || 0,
+    id: q.id,
     type: 'multiple_choice' as const,
+    question: q.question,
+    options: q.options || [],
+    correctAnswer: String(q.correctAnswer || ''), // Ensure it's always a string
+    theme: q.category || 'general',
     explanation: q.explanation || '',
     difficulty: (typeof q.difficulty === 'string' ? 
       (q.difficulty === 'easy' ? 1 : q.difficulty === 'medium' ? 2 : 3) : 
       q.difficulty || 2) as 1 | 2 | 3,
     source: 'default',
-    options: q.options || [],
-    correctAnswer: q.correctAnswer || '',
-    category: q.category || 'general'
+    category: q.category || 'general',
+    points: q.points || 10,
+    correctIndex: q.options?.findIndex(opt => opt === q.correctAnswer) || 0
   }));
   
   const questionAnalysis = analyzeQuestions(olympiadQuestions);
