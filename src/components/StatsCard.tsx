@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface StatsCardProps {
@@ -5,6 +6,7 @@ interface StatsCardProps {
   value: string | number;
   icon: string;
   description?: string;
+  subtitle?: string; // Add subtitle prop
   trend?: "up" | "down" | "stable";
   variant?: "default" | "success" | "warning" | "info";
 }
@@ -14,6 +16,7 @@ export const StatsCard = ({
   value,
   icon,
   description,
+  subtitle,
   trend,
   variant = "default"
 }: StatsCardProps) => {
@@ -40,10 +43,10 @@ export const StatsCard = ({
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold text-foreground">{value}</div>
-        {description && (
+        {(description || subtitle) && (
           <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
             {trend && <span>{trendIcon[trend]}</span>}
-            <span>{description}</span>
+            <span>{description || subtitle}</span>
           </div>
         )}
       </CardContent>

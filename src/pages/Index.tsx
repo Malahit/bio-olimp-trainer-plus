@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -34,7 +33,13 @@ const Index = () => {
     if (savedQuestions) {
       const parsed = JSON.parse(savedQuestions);
       setUserQuestions(parsed);
-      setAllQuestions([...questions, ...parsed]);
+      // Convert OlympiadQuestion to Question format for compatibility
+      const convertedQuestions = parsed.map((q: OlympiadQuestion) => ({
+        ...q,
+        correctAnswer: q.correctAnswer || (q.correctIndex !== undefined ? q.options[q.correctIndex] : ''),
+        category: q.category || q.theme
+      }));
+      setAllQuestions([...questions, ...convertedQuestions]);
     }
   }, []);
 
@@ -46,7 +51,13 @@ const Index = () => {
   const saveUserQuestions = (newQuestions: OlympiadQuestion[]) => {
     localStorage.setItem('userOlympiadQuestions', JSON.stringify(newQuestions));
     setUserQuestions(newQuestions);
-    setAllQuestions([...questions, ...newQuestions]);
+    // Convert to Question format for compatibility
+    const convertedQuestions = newQuestions.map((q: OlympiadQuestion) => ({
+      ...q,
+      correctAnswer: q.correctAnswer || (q.correctIndex !== undefined ? q.options[q.correctIndex] : ''),
+      category: q.category || q.theme
+    }));
+    setAllQuestions([...questions, ...convertedQuestions]);
   };
 
   // Добавление нового вопроса
@@ -202,9 +213,19 @@ const Index = () => {
     };
   });
 
-  // Анализ вопросов
-  const questionAnalysis = analyzeQuestions(allQuestions);
-  const questionStats = getQuestionStats(allQuestions);
+  // Анализ вопросов - convert to OlympiadQuestion format
+  const olympiadQuestions = allQuestions.map(q => ({
+    ...q,
+    theme: q.category || 'general',
+    correctIndex: q.options?.findIndex(opt => opt === q.correctAnswer) || 0,
+    type: 'multiple_choice' as const,
+    explanation: q.explanation || '',
+    difficulty: q.difficulty || 2,
+    source: q.source || 'default'
+  }));
+  
+  const questionAnalysis = analyzeQuestions(olympiadQuestions);
+  const questionStats = getQuestionStats(olympiadQuestions);
 
   if (currentView === "practice" && practiceQuestions.length > 0) {
     const currentQuestion = practiceQuestions[currentQuestionIndex];
@@ -337,19 +358,19 @@ const Index = () => {
                 title="Всего вопросов"
                 value={questionStats.total}
                 icon="📊"
-                subtitle={`${questionStats.bySource.userAdded} добавлено вами`}
+                description={`${questionStats.bySource.userAdded} добавлено вами`}
               />
               <StatsCard 
                 title="Популярная тема"
                 value={questionAnalysis.topThemes[0]?.name || 'Нет данных'}
                 icon="🎯"
-                subtitle={`${questionAnalysis.topThemes[0]?.percent || 0}% от общего`}
+                description={`${questionAnalysis.topThemes[0]?.percent || 0}% от общего`}
               />
               <StatsCard 
                 title="Сложность"
                 value={`${questionStats.byDifficulty[2]} средних`}
                 icon="⚡"
-                subtitle={`${questionStats.byDifficulty[1]} легких, ${questionStats.byDifficulty[3]} сложных`}
+                description={`${questionStats.byDifficulty[1]} легких, ${questionStats.byDifficulty[3]} сложных`}
               />
             </div>
 

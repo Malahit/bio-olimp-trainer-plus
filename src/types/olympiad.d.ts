@@ -11,7 +11,8 @@ export interface OlympiadQuestion {
   type: QuestionType;
   question: string;
   options: string[];
-  correctIndex?: number;
+  correctAnswer?: string; // Changed from correctIndex to align with existing Question type
+  correctIndex?: number; // Keep for backward compatibility
   theme: string;
   explanation: string;
   difficulty: 1 | 2 | 3;
