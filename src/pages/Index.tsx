@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +28,16 @@ const Index = () => {
   const [sessionStartTime] = useState(Date.now());
   const { toast } = useToast();
 
+  // Функция для конвертации OlympiadQuestion в Question
+  const convertOlympiadToQuestion = (q: OlympiadQuestion) => ({
+    ...q,
+    type: q.type === 'multiple_choice' ? 'choice' as const : 
+          q.type === 'true_false' ? 'choice' as const :
+          q.type === 'matching' ? 'matching' as const : 'text' as const,
+    correctAnswer: q.correctAnswer || (q.correctIndex !== undefined ? q.options[q.correctIndex] : ''),
+    category: q.category || q.theme
+  });
+
   // Загрузка пользовательских вопросов при старте
   useEffect(() => {
     const savedQuestions = localStorage.getItem('userOlympiadQuestions');
@@ -34,11 +45,7 @@ const Index = () => {
       const parsed = JSON.parse(savedQuestions);
       setUserQuestions(parsed);
       // Convert OlympiadQuestion to Question format for compatibility
-      const convertedQuestions = parsed.map((q: OlympiadQuestion) => ({
-        ...q,
-        correctAnswer: q.correctAnswer || (q.correctIndex !== undefined ? q.options[q.correctIndex] : ''),
-        category: q.category || q.theme
-      }));
+      const convertedQuestions = parsed.map(convertOlympiadToQuestion);
       setAllQuestions([...questions, ...convertedQuestions]);
     }
   }, []);
@@ -52,11 +59,7 @@ const Index = () => {
     localStorage.setItem('userOlympiadQuestions', JSON.stringify(newQuestions));
     setUserQuestions(newQuestions);
     // Convert to Question format for compatibility
-    const convertedQuestions = newQuestions.map((q: OlympiadQuestion) => ({
-      ...q,
-      correctAnswer: q.correctAnswer || (q.correctIndex !== undefined ? q.options[q.correctIndex] : ''),
-      category: q.category || q.theme
-    }));
+    const convertedQuestions = newQuestions.map(convertOlympiadToQuestion);
     setAllQuestions([...questions, ...convertedQuestions]);
   };
 
@@ -220,8 +223,13 @@ const Index = () => {
     correctIndex: q.options?.findIndex(opt => opt === q.correctAnswer) || 0,
     type: 'multiple_choice' as const,
     explanation: q.explanation || '',
-    difficulty: q.difficulty || 2,
-    source: q.source || 'default'
+    difficulty: (typeof q.difficulty === 'string' ? 
+      (q.difficulty === 'easy' ? 1 : q.difficulty === 'medium' ? 2 : 3) : 
+      q.difficulty || 2) as 1 | 2 | 3,
+    source: 'default',
+    options: q.options || [],
+    correctAnswer: q.correctAnswer || '',
+    category: q.category || 'general'
   }));
   
   const questionAnalysis = analyzeQuestions(olympiadQuestions);
@@ -358,19 +366,19 @@ const Index = () => {
                 title="Всего вопросов"
                 value={questionStats.total}
                 icon="📊"
-                description={`${questionStats.bySource.userAdded} добавлено вами`}
+                subtitle={`${questionStats.bySource.userAdded} добавлено вами`}
               />
               <StatsCard 
                 title="Популярная тема"
                 value={questionAnalysis.topThemes[0]?.name || 'Нет данных'}
                 icon="🎯"
-                description={`${questionAnalysis.topThemes[0]?.percent || 0}% от общего`}
+                subtitle={`${questionAnalysis.topThemes[0]?.percent || 0}% от общего`}
               />
               <StatsCard 
                 title="Сложность"
                 value={`${questionStats.byDifficulty[2]} средних`}
                 icon="⚡"
-                description={`${questionStats.byDifficulty[1]} легких, ${questionStats.byDifficulty[3]} сложных`}
+                subtitle={`${questionStats.byDifficulty[1]} легких, ${questionStats.byDifficulty[3]} сложных`}
               />
             </div>
 
