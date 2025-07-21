@@ -9,22 +9,65 @@ import { QuestionCard } from "@/components/QuestionCard";
 import { AchievementCard } from "@/components/AchievementCard";
 import { ProgressChart } from "@/components/ProgressChart";
 import { UserStats } from "@/components/UserStats";
+import AddQuestionForm from "@/components/olympiad/AddQuestionForm";
+import QuestionBank from "@/components/olympiad/QuestionBank";
 import { categories, questions, getUserProgress, saveUserProgress } from "@/data/questions";
+import { analyzeQuestions, getQuestionStats } from "@/lib/patternAnalysis";
 import { useToast } from "@/hooks/use-toast";
+import type { OlympiadQuestion } from "@/types/olympiad";
 import bioHeroImage from "@/assets/bio-hero.jpg";
 
 const Index = () => {
-  const [currentView, setCurrentView] = useState<"dashboard" | "practice" | "achievements">("dashboard");
+  const [currentView, setCurrentView] = useState<"dashboard" | "practice" | "achievements" | "management">("dashboard");
   const [currentTopic, setCurrentTopic] = useState<string | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [userProgress, setUserProgress] = useState(getUserProgress());
   const [practiceQuestions, setPracticeQuestions] = useState(questions);
+  const [userQuestions, setUserQuestions] = useState<OlympiadQuestion[]>([]);
+  const [allQuestions, setAllQuestions] = useState(questions);
   const [sessionStartTime] = useState(Date.now());
   const { toast } = useToast();
+
+  // Загрузка пользовательских вопросов при старте
+  useEffect(() => {
+    const savedQuestions = localStorage.getItem('userOlympiadQuestions');
+    if (savedQuestions) {
+      const parsed = JSON.parse(savedQuestions);
+      setUserQuestions(parsed);
+      setAllQuestions([...questions, ...parsed]);
+    }
+  }, []);
 
   useEffect(() => {
     saveUserProgress(userProgress);
   }, [userProgress]);
+
+  // Сохранение пользовательских вопросов
+  const saveUserQuestions = (newQuestions: OlympiadQuestion[]) => {
+    localStorage.setItem('userOlympiadQuestions', JSON.stringify(newQuestions));
+    setUserQuestions(newQuestions);
+    setAllQuestions([...questions, ...newQuestions]);
+  };
+
+  // Добавление нового вопроса
+  const handleAddQuestion = (newQuestion: OlympiadQuestion) => {
+    const updatedQuestions = [...userQuestions, newQuestion];
+    saveUserQuestions(updatedQuestions);
+    toast({
+      title: "Вопрос добавлен! 🎉",
+      description: "Новый вопрос успешно добавлен в базу данных.",
+    });
+  };
+
+  // Удаление вопроса
+  const handleDeleteQuestion = (questionId: string) => {
+    const updatedQuestions = userQuestions.filter(q => q.id !== questionId);
+    saveUserQuestions(updatedQuestions);
+    toast({
+      title: "Вопрос удален",
+      description: "Вопрос успешно удален из базы данных.",
+    });
+  };
 
   // Система достижений
   const achievements = [
@@ -37,6 +80,16 @@ const Index = () => {
       currentProgress: userProgress.completedQuestions.length,
       isUnlocked: userProgress.completedQuestions.length >= 5,
       points: 10
+    },
+    {
+      id: "question_creator",
+      title: "Создатель вопросов",
+      description: "Добавьте свои 5 вопросов",
+      icon: "✍️",
+      requirement: 5,
+      currentProgress: userQuestions.length,
+      isUnlocked: userQuestions.length >= 5,
+      points: 25
     },
     {
       id: "botanist",
@@ -80,20 +133,20 @@ const Index = () => {
 
   const handleTopicClick = (topicId: string) => {
     setCurrentTopic(topicId);
-    const topicQuestions = questions.filter(q => q.category === topicId);
+    const topicQuestions = allQuestions.filter(q => q.category === topicId);
     setPracticeQuestions(topicQuestions);
     setCurrentQuestionIndex(0);
     setCurrentView("practice");
   };
 
   const handleStartPractice = () => {
-    setPracticeQuestions(questions);
+    setPracticeQuestions(allQuestions);
     setCurrentQuestionIndex(0);
     setCurrentView("practice");
   };
 
   const handleAnswer = (questionId: string, userAnswer: any, isCorrect: boolean) => {
-    const question = questions.find(q => q.id === questionId);
+    const question = allQuestions.find(q => q.id === questionId);
     if (!question) return;
 
     const newProgress = { ...userProgress };
@@ -102,10 +155,10 @@ const Index = () => {
       newProgress.completedQuestions.push(questionId);
       
       if (isCorrect) {
-        newProgress.totalPoints += question.points;
-        const category = question.category.toLowerCase();
-        if (newProgress.scores[category] !== undefined) {
-          newProgress.scores[category] += question.points;
+        newProgress.totalPoints += question.points || 10;
+        const category = question.category?.toLowerCase();
+        if (category && newProgress.scores[category] !== undefined) {
+          newProgress.scores[category] += question.points || 10;
         }
       }
     }
@@ -115,13 +168,13 @@ const Index = () => {
     if (isCorrect) {
       toast({
         title: "Правильно! 🎉",
-        description: `Вы получили ${question.points} ${question.points === 1 ? 'балл' : 'балла'}!`,
+        description: `Вы получили ${question.points || 10} ${(question.points || 10) === 1 ? 'балл' : 'балла'}!`,
       });
     }
   };
 
   const getTopicProgress = (topicId: string) => {
-    const topicQuestions = questions.filter(q => q.category === topicId);
+    const topicQuestions = allQuestions.filter(q => q.category === topicId);
     const completedCount = topicQuestions.filter(q => 
       userProgress.completedQuestions.includes(q.id)
     ).length;
@@ -133,7 +186,7 @@ const Index = () => {
     };
   };
 
-  const totalQuestions = questions.length;
+  const totalQuestions = allQuestions.length;
   const completedQuestions = userProgress.completedQuestions.length;
   const overallProgress = totalQuestions > 0 ? (completedQuestions / totalQuestions) * 100 : 0;
 
@@ -148,6 +201,10 @@ const Index = () => {
       color: category.color || "primary"
     };
   });
+
+  // Анализ вопросов
+  const questionAnalysis = analyzeQuestions(allQuestions);
+  const questionStats = getQuestionStats(allQuestions);
 
   if (currentView === "practice" && practiceQuestions.length > 0) {
     const currentQuestion = practiceQuestions[currentQuestionIndex];
@@ -243,10 +300,10 @@ const Index = () => {
               <Button 
                 variant="outline" 
                 size="lg"
-                onClick={() => setCurrentView("achievements")}
+                onClick={() => setCurrentView("management")}
                 className="bg-white/10 border-white/30 text-white hover:bg-white/20"
               >
-                🏆 Достижения
+                📝 Управление вопросами
               </Button>
             </div>
           </div>
@@ -255,11 +312,12 @@ const Index = () => {
 
       <main className="max-w-7xl mx-auto px-4 py-8">
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="overview">Обзор</TabsTrigger>
             <TabsTrigger value="topics">Темы</TabsTrigger>
             <TabsTrigger value="progress">Прогресс</TabsTrigger>
             <TabsTrigger value="achievements">Достижения</TabsTrigger>
+            <TabsTrigger value="management">Управление</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-8">
@@ -268,10 +326,32 @@ const Index = () => {
               totalPoints={userProgress.totalPoints}
               completedQuestions={completedQuestions}
               totalQuestions={totalQuestions}
-              currentStreak={3} // Заглушка
-              averageScore={85} // Заглушка
-              timeSpent={120} // Заглушка
+              currentStreak={3}
+              averageScore={85}
+              timeSpent={120}
             />
+
+            {/* Статистика вопросов */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <StatsCard 
+                title="Всего вопросов"
+                value={questionStats.total}
+                icon="📊"
+                subtitle={`${questionStats.bySource.userAdded} добавлено вами`}
+              />
+              <StatsCard 
+                title="Популярная тема"
+                value={questionAnalysis.topThemes[0]?.name || 'Нет данных'}
+                icon="🎯"
+                subtitle={`${questionAnalysis.topThemes[0]?.percent || 0}% от общего`}
+              />
+              <StatsCard 
+                title="Сложность"
+                value={`${questionStats.byDifficulty[2]} средних`}
+                icon="⚡"
+                subtitle={`${questionStats.byDifficulty[1]} легких, ${questionStats.byDifficulty[3]} сложных`}
+              />
+            </div>
 
             {/* Быстрый старт */}
             <div>
@@ -290,7 +370,7 @@ const Index = () => {
                   size="lg" 
                   className="h-16 text-lg"
                   onClick={() => {
-                    const incorrectQuestions = questions.filter(q => 
+                    const incorrectQuestions = allQuestions.filter(q => 
                       !userProgress.completedQuestions.includes(q.id)
                     );
                     if (incorrectQuestions.length > 0) {
@@ -347,6 +427,17 @@ const Index = () => {
                   achievement={achievement}
                 />
               ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="management" className="space-y-6">
+            <h2 className="text-2xl font-bold text-foreground">Управление вопросами</h2>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <AddQuestionForm onSubmit={handleAddQuestion} />
+              <QuestionBank 
+                questions={userQuestions}
+                onQuestionDelete={handleDeleteQuestion}
+              />
             </div>
           </TabsContent>
         </Tabs>
