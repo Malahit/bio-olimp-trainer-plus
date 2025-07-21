@@ -37,8 +37,8 @@ const Index = () => {
     category: q.category || q.theme,
     points: q.points || 10, // Ensure points is always defined
     difficulty: typeof q.difficulty === 'string' ? 
-      (q.difficulty === 'easy' ? 1 : q.difficulty === 'medium' ? 2 : 3) : 
-      q.difficulty || 2,
+      q.difficulty as "easy" | "medium" | "hard" :
+      (q.difficulty === 1 ? 'easy' : q.difficulty === 2 ? 'medium' : 'hard') as "easy" | "medium" | "hard",
     explanation: q.explanation || '',
     options: q.options || []
   });
